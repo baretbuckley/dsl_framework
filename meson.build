@@ -5,7 +5,7 @@ project('ast_framework', 'cpp',
 
 incdir = include_directories('include')
 
-src_files = ['ast_framework.cpp']
+src_files = ['ast_framework.cpp', 'src/value.cpp']
 
 exe = executable('ast_framework', src_files,
   install : true, include_directories : incdir)
