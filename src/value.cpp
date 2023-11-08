@@ -19,6 +19,26 @@ namespace ast {
     template<class V, class... Ts> OverloadVisitor(V, Ts...) -> OverloadVisitor<V, Ts...>;
 
 
+
+    Value::Type Value::type() {
+        return static_cast<Type>(instance_.index());
+    }
+
+    std::string Value::typeToString(Value::Type t) {
+        switch(t) {
+            case Value::Type::Null: return "Null";
+            case Value::Type::Number: return "Number";
+            case Value::Type::String: return "String";
+            case Value::Type::Bool: return "Bool";
+            default: return "Unsupported Type";
+        }
+    }
+
+    std::string Value::typeAsString() {
+        return typeToString(type());
+    }
+
+
     template <typename T>
     std::string STR(T&& t) {
         std::ostringstream oss;
@@ -27,6 +47,7 @@ namespace ast {
     }
 
     auto TO_DOUBLE_VISITOR = Visitor {
+        [](Value::Null v) -> double {return 0;},
         [](double v) -> double {return v;},
         [](std::string v) -> double {return 0;},
         [](bool v) -> double {return (double)v;}
@@ -36,6 +57,7 @@ namespace ast {
     }
 
     auto TO_STRING_VISITOR = Visitor {
+        [](Value::Null v) -> std::string {return "";},
         [](double v) -> std::string {return STR(v);},
         [](std::string v) -> std::string {return v;},
         [](bool v) -> std::string {return (v)? "True" : "False";},
@@ -48,6 +70,7 @@ namespace ast {
     }
 
     auto TO_BOOL_VISITOR = Visitor {
+        [](Value::Null v) -> bool {return false;},
         [](double v) -> bool {return (bool)v;},
         [](std::string v) -> bool {return false;},
         [](bool v) -> bool {return v;}
@@ -55,7 +78,7 @@ namespace ast {
     bool Value::toBool() const {
         return std::visit(TO_BOOL_VISITOR, instance_);
     }
-    
+
 
     auto BINARY_VISITOR = Visitor {
         [](auto, auto) -> Value {return Value(0.0f);}
@@ -185,4 +208,8 @@ namespace ast {
         return std::visit(LESS_COMP_EQUAL_VISITOR, instance_, v.instance_);
     }
 
+    
+    std::ostream &operator<<(std::ostream &os, Value::Type t) {
+       return os << Value::typeToString(t);
+    }
 }
