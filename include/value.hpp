@@ -37,18 +37,26 @@ namespace ast {
 
         class Null {
             const char *cause_;
-            Null() = delete;
+            public:
             Null(const char *cause) : cause_(cause) {}
             const char *cause() {return cause_;}
+            std::string toString() {
+                std::string ret;
+                ret.append("Null Value: \"");
+                ret.append(cause_);
+                ret.append("\"");
+                return ret;
+            }
         };
 
-        #define AST_STD_TYPES Null, double, std::string, bool
+        #define AST_STD_TYPES std::monostate, Null, double, std::string, bool
         typedef std::variant<AST_STD_TYPES> Variant;
         enum class Type {
-            Null=0,
-            Number=1,
-            String=2,
-            Bool=3,
+            Void=0,
+            Null=1,
+            Number=2,
+            String=3,
+            Bool=4,
         };
         Type type();
         static std::string typeToString(Type t);
@@ -58,6 +66,8 @@ namespace ast {
         }
         std::string typeAsString();
 
+        Value() : instance_() {}
+        Value(Null value) : instance_(value) {}
         Value(double value) : instance_(value) {}
         Value(std::string value) : instance_(value) {}
         Value(bool value) : instance_(value) {}

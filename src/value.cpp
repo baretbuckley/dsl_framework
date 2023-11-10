@@ -26,6 +26,7 @@ namespace ast {
 
     std::string Value::typeToString(Value::Type t) {
         switch(t) {
+            case Value::Type::Void: return "Void";
             case Value::Type::Null: return "Null";
             case Value::Type::Number: return "Number";
             case Value::Type::String: return "String";
@@ -47,9 +48,10 @@ namespace ast {
     }
 
     auto TO_DOUBLE_VISITOR = Visitor {
-        [](Value::Null v) -> double {return 0;},
+        [](std::monostate) -> double {return 0;},
+        [](Value::Null) -> double {return 0;},
         [](double v) -> double {return v;},
-        [](std::string v) -> double {return 0;},
+        [](std::string) -> double {return 0;},
         [](bool v) -> double {return (double)v;}
     };
     double Value::toDouble() const {
@@ -57,12 +59,13 @@ namespace ast {
     }
 
     auto TO_STRING_VISITOR = Visitor {
-        [](Value::Null v) -> std::string {return "";},
+        [](std::monostate) -> std::string {return "";},
+        [](Value::Null v) -> std::string {return v.toString();},
         [](double v) -> std::string {return STR(v);},
         [](std::string v) -> std::string {return v;},
         [](bool v) -> std::string {return (v)? "True" : "False";},
         [](auto) -> std::string {
-            return "";
+            return "NOT A RECOGNIZED VALUE STATE";
         }
     };
     std::string Value::toString() const {
@@ -70,7 +73,8 @@ namespace ast {
     }
 
     auto TO_BOOL_VISITOR = Visitor {
-        [](Value::Null v) -> bool {return false;},
+        [](std::monostate) -> bool {return false;},
+        [](Value::Null) -> bool {return false;},
         [](double v) -> bool {return (bool)v;},
         [](std::string v) -> bool {return false;},
         [](bool v) -> bool {return v;}
@@ -81,11 +85,14 @@ namespace ast {
 
 
     auto BINARY_VISITOR = Visitor {
-        [](auto, auto) -> Value {return Value(0.0f);}
+        [](Value::Null &n, auto) -> Value {return Value(n);},
+        [](auto, Value::Null &n) -> Value {return Value(n);},
+        [](auto, auto) -> Value {return Value(Value::Null("Unsupported types for binary operation."));}
     };
 
     auto UNARY_VISITOR = Visitor {
-        [](auto) -> Value {return Value(0.0f);}
+        [](Value::Null n) -> Value {return Value(n);},
+        [](auto) -> Value {return Value(Value::Null("Unsupported types for unary operation."));}
     };
 
     // Arithmetic -----------------------------------------
