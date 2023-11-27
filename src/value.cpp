@@ -2,28 +2,66 @@
 
 #include <variant>
 #include <iostream>
+#include <concepts>
 
 namespace ast {
 
-    template<typename ... Ts>
-    struct Visitor : Ts ... {
-        using Ts::operator() ...;
-    };
-    template<class... Ts> Visitor(Ts...) -> Visitor<Ts...>;
-
-    template<typename V, typename... Ts>
-    struct OverloadVisitor : V, Ts... {
-        using Ts::operator() ...;
-        using V::operator();
-    };
-    template<class V, class... Ts> OverloadVisitor(V, Ts...) -> OverloadVisitor<V, Ts...>;
+    // Helper functions
 
 
+    inline std::string STR(std::ostringstream& oss) {
+        auto s = oss.str();
+        oss.str(""); // clear the string buffer for next STR call
+        oss.clear(); // reset stream error state for next STR call
+        return s;
+    }
+
+    template <typename T, typename ... Args>
+    std::string STR(std::ostringstream& oss, T&& t, Args&& ... args) {
+        oss << t;
+        return STR(oss, std::forward<Args>(args)...);
+    }
+
+    template <typename T, typename ... Args>
+    std::string STR(T&& t, Args&& ... args) {
+        // using thread_local here so that recursive template does not instantiate excessive ostringstreams
+        thread_local std::ostringstream oss;
+        oss << t;
+        return STR(oss, std::forward<Args>(args)...);
+    }
+
+    template<typename T, typename V>
+    Value UndefinedOperation(T, const char * op, V) {
+        return Value(Value::Null(STR(
+                "Undefined operation: ( ",
+                Value::typeToString<T>(),
+                ' ', op, ' ',
+                Value::typeToString<V>(), " )"))); 
+    }
+
+    // Null class definition -----------------------
+
+    Value::Null::Null(const char *cause)
+        : cause_(cause) {}
+
+    Value::Null::Null(const std::string &cause)
+        : cause_(strcpy(new char[cause.size()+1], cause.c_str()))
+    {}
+
+    std::string Value::Null::toString() {
+        std::string ret;
+        ret.append("Null Value: \"");
+        ret.append(cause_);
+        ret.append("\"");
+        return ret;
+    }
+
+    // Type accessors and helper functions
 
     Value::Type Value::type() {
         return static_cast<Type>(instance_.index());
     }
-
+    
     std::string Value::typeToString(Value::Type t) {
         switch(t) {
             case Value::Type::Void: return "Void";
@@ -40,180 +78,246 @@ namespace ast {
     }
 
 
-    template <typename T>
-    std::string STR(T&& t) {
-        std::ostringstream oss;
-        oss << t;
-        return oss.str();
-    }
+    // Conversion functions
 
-    auto TO_DOUBLE_VISITOR = Visitor {
-        [](std::monostate) -> double {return 0;},
-        [](Value::Null) -> double {return 0;},
-        [](double v) -> double {return v;},
-        [](std::string) -> double {return 0;},
-        [](bool v) -> double {return (double)v;}
+    struct ToDouble_visitor {
+        template<typename T>
+        double operator()(T&) const {return 0.0;}
+        double operator()(double &v) const {return v;}
     };
     double Value::toDouble() const {
-        return std::visit(TO_DOUBLE_VISITOR, instance_);
+        return std::visit(ToDouble_visitor(), instance_);
     }
 
-    auto TO_STRING_VISITOR = Visitor {
-        [](std::monostate) -> std::string {return "";},
-        [](Value::Null v) -> std::string {return v.toString();},
-        [](double v) -> std::string {return STR(v);},
-        [](std::string v) -> std::string {return v;},
-        [](bool v) -> std::string {return (v)? "True" : "False";},
-        [](auto) -> std::string {
-            return "NOT A RECOGNIZED VALUE STATE";
-        }
+    struct ToString_visitor {
+        std::string operator()(std::monostate)  {return "Void";}
+        std::string operator()(Value::Null v) {return v.toString();}
+        std::string operator()(double v) {return STR(v);}
+        std::string operator()(std::string v) {return v;}
+        std::string operator()(bool v) {return (v)? "True" : "False";}
     };
     std::string Value::toString() const {
-        return std::visit(TO_STRING_VISITOR, instance_);
+        return std::visit(ToString_visitor(), instance_);
     }
 
-    auto TO_BOOL_VISITOR = Visitor {
-        [](std::monostate) -> bool {return false;},
-        [](Value::Null) -> bool {return false;},
-        [](double v) -> bool {return (bool)v;},
-        [](std::string v) -> bool {return false;},
-        [](bool v) -> bool {return v;}
+    struct ToBool_visitor {
+        bool operator()(std::monostate) const {return false;}
+        bool operator()(Value::Null) const {return false;}
+        bool operator()(double v) const {return (bool)v;}
+        bool operator()(std::string v) const {return v.empty();}
+        bool operator()(bool v) const {return v;}
     };
     bool Value::toBool() const {
-        return std::visit(TO_BOOL_VISITOR, instance_);
+        return std::visit(ToBool_visitor(), instance_);
     }
 
-
-    auto BINARY_VISITOR = Visitor {
-        [](Value::Null &n, auto) -> Value {return Value(n);},
-        [](auto, Value::Null &n) -> Value {return Value(n);},
-        [](auto, auto) -> Value {return Value(Value::Null("Unsupported types for binary operation."));}
-    };
-
-    auto UNARY_VISITOR = Visitor {
-        [](Value::Null n) -> Value {return Value(n);},
-        [](auto) -> Value {return Value(Value::Null("Unsupported types for unary operation."));}
-    };
 
     // Arithmetic -----------------------------------------
 
-    auto PLUS_VISITOR = OverloadVisitor{
-        BINARY_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv + rv);}
-    };
+    struct Plus_visitor {
+        Value operator()(const double lv, const double rv) const {
+            return Value(lv + rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T &lv, U &rv) const {
+            return UndefinedOperation(lv, "+", rv);
+        }
+    }; 
     Value Value::operator+(const Value& v) const {
-        return std::visit(PLUS_VISITOR, instance_, v.instance_);
+        return std::visit(Plus_visitor(), instance_, v.instance_);
     }
 
-    auto MINUS_VISITOR = OverloadVisitor{
-        BINARY_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv - rv);}
+    struct Minus_visitor {
+        Value operator()(const double &lv, const double &rv) const {
+            return Value(lv - rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T& lv, U& rv) const {
+            return UndefinedOperation(lv, "-", rv);
+        }
     };
     Value Value::operator-(const Value& v) const {
-        return std::visit(MINUS_VISITOR, instance_, v.instance_);
+        return std::visit(Minus_visitor(), instance_, v.instance_);
     }
 
-    auto MULTIPLY_VISITOR = OverloadVisitor{
-        BINARY_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv * rv);}
+    struct Multiply_visitor {
+        Value operator()(const double &lv, const double &rv) const {
+            return Value(lv * rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T& lv, U& rv) const {
+            return UndefinedOperation(lv, "*", rv);
+        }
     };
     Value Value::operator*(const Value& v) const {
-        return std::visit(MULTIPLY_VISITOR, instance_, v.instance_);
+        return std::visit(Multiply_visitor(), instance_, v.instance_);
     }
 
-    auto DIVIDE_VISITOR = OverloadVisitor{
-        BINARY_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv / rv);}
+    struct Divide_visitor {
+        Value operator()(const double &lv, const double &rv) const {
+            return Value(lv / rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T& lv, U& rv) const {
+            return UndefinedOperation(lv, "/", rv);
+        }
     };
     Value Value::operator/(const Value& v) const {
-        return std::visit(DIVIDE_VISITOR, instance_, v.instance_);
+        return std::visit(Divide_visitor(), instance_, v.instance_);
     }
 
-    auto INCREMENT_VISITOR = OverloadVisitor{
-        UNARY_VISITOR,
-        [](double v) -> Value {return Value(++v);}
-    };
-    Value Value::operator++() const {
-        return std::visit(INCREMENT_VISITOR, instance_);
-    }
-
-    auto DECREMENT_VISITOR = OverloadVisitor{
-        UNARY_VISITOR,
-        [](double v) -> Value {return Value(--v);}
-    };
-    Value Value::operator--() const {
-        return std::visit(DECREMENT_VISITOR, instance_);
-    }
-
-    auto NEGATION_VISITOR = OverloadVisitor{
-        UNARY_VISITOR,
-        [](double v) -> Value {return Value(-v);}
+    struct Negation_visitor {
+        Value operator()(double v) const {
+            return Value(-v);
+        }
+        template<typename T>
+        Value operator()(T) const {
+            return STR("Undefined Operation: ( -",
+                        Value::typeToString<T>(), " )");
+        }
     };
     Value Value::operator-() const {
-        return std::visit(NEGATION_VISITOR, instance_);
+        return std::visit(Negation_visitor(), instance_);
     }
 
     // Relational -----------------------------------------
-    
-    auto RATIONAL_VISITOR = Visitor {
-        [](auto, auto) -> Value {return Value(false);}
-    };
 
-    auto EQUAL_COMP_VISITOR = OverloadVisitor{
-        RATIONAL_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv == rv);},
-        [](std::string lv, std::string rv) -> Value {return Value(!lv.compare(rv));},
-        [](bool lv, bool rv) -> Value {return Value(lv == rv);}
+
+    struct EqualComp_visitor {
+        template<std::equality_comparable T>
+        Value operator()(const T lv, const T rv) const {
+            return Value(lv == rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T lv, U rv) const {
+            return UndefinedOperation(lv, "==", rv);
+        }
     };
     Value Value::operator==(const Value& v) const {
-        return std::visit(EQUAL_COMP_VISITOR, instance_, v.instance_);
+        return std::visit(EqualComp_visitor(), instance_, v.instance_);
     }
 
-    auto NOT_EQUAL_COMP_VISITOR = OverloadVisitor{
-        RATIONAL_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv != rv);},
-        [](std::string lv, std::string rv) -> Value {return Value((bool)lv.compare(rv));},
-        [](bool lv, bool rv) -> Value {return Value(lv != rv);}
+    struct NotEqualComp_visitor {
+        template<std::equality_comparable T>
+        Value operator()(const T lv, const T rv) const {
+            return Value(lv != rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T lv, U rv) const {
+            return UndefinedOperation(lv, "!=", rv);
+        }
     };
     Value Value::operator!=(const Value& v) const {
-        return std::visit(NOT_EQUAL_COMP_VISITOR, instance_, v.instance_);
+        return std::visit(NotEqualComp_visitor(), instance_, v.instance_);
     }
 
-    auto GREATER_COMP_VISITOR = OverloadVisitor{
-        RATIONAL_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv > rv);},
-        [](std::string lv, std::string rv) -> Value {return Value(lv.compare(rv)>0);},
+    struct GreaterComp_visitor {
+        template<std::totally_ordered T>
+        Value operator()(const T lv, const T rv) const {
+            return Value(lv > rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T lv, U rv) const {
+            return UndefinedOperation(lv, ">", rv);
+        }
     };
     Value Value::operator>(const Value& v) const {
-        return std::visit(GREATER_COMP_VISITOR, instance_, v.instance_);
+        return std::visit(GreaterComp_visitor(), instance_, v.instance_);
     }
 
-    auto LESS_COMP_VISITOR = OverloadVisitor{
-        RATIONAL_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv < rv);},
-        [](std::string lv, std::string rv) -> Value {return Value(lv.compare(rv)<0);},
+    struct LessComp_visitor {
+        template<std::totally_ordered T>
+        Value operator()(const T lv, const T rv) const {
+            return Value(lv < rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T lv, U rv) const {
+            return UndefinedOperation(lv, "<", rv);
+        }
     };
     Value Value::operator<(const Value& v) const {
-        return std::visit(LESS_COMP_VISITOR, instance_, v.instance_);
+        return std::visit(LessComp_visitor(), instance_, v.instance_);
     }
 
-    auto GREATER_EQUAL_COMP_VISITOR = OverloadVisitor{
-        RATIONAL_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv >= rv);},
-        [](std::string lv, std::string rv) -> Value {return Value(lv.compare(rv)>=0);},
+    struct GreaterEqualComp_visitor {
+        template<std::totally_ordered T>
+        Value operator()(const T lv, const T rv) const {
+            return Value(lv >= rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T lv, U rv) const {
+            return UndefinedOperation(lv, ">=", rv);
+        }
     };
     Value Value::operator>=(const Value& v) const {
-        return std::visit(GREATER_EQUAL_COMP_VISITOR, instance_, v.instance_);
+        return std::visit(GreaterEqualComp_visitor(), instance_, v.instance_);
     }
 
-    auto LESS_COMP_EQUAL_VISITOR = OverloadVisitor{
-        RATIONAL_VISITOR,
-        [](double lv, double rv) -> Value {return Value(lv <= rv);},
-        [](std::string lv, std::string rv) -> Value {return Value(lv.compare(rv)<=0);},
+    struct LessEqualComp_visitor {
+        template<std::totally_ordered T>
+        Value operator()(const T lv, const T rv) const {
+            return Value(lv <= rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T lv, U rv) const {
+            return UndefinedOperation(lv, "<=", rv);
+        }
     };
     Value Value::operator<=(const Value& v) const {
-        return std::visit(LESS_COMP_EQUAL_VISITOR, instance_, v.instance_);
+        return std::visit(LessEqualComp_visitor(), instance_, v.instance_);
     }
+
+    // Logical --------------------------------------------
+
+
+    struct LogicalAnd_visitor {
+        template<typename T, typename U>
+        requires std::convertible_to<T, bool> &&
+                 std::convertible_to<U, bool>
+        Value operator()(const T lv, const U rv) const {
+            return Value(lv && rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T lv, U rv) const {
+            return UndefinedOperation(lv, "&&", rv);
+        }
+    };
+    Value Value::operator&&(const Value& v) const {
+        return std::visit(LogicalAnd_visitor(), instance_, v.instance_);
+    }
+
+    struct LogicalOr_visitor {
+        template<typename T, typename U>
+        requires std::convertible_to<T, bool> &&
+                 std::convertible_to<U, bool>
+        Value operator()(const T lv, const U rv) const {
+            return Value(lv || rv);
+        }
+        template<typename T, typename U>
+        Value operator()(T lv, U rv) const {
+            return UndefinedOperation(lv, "||", rv);
+        }
+    };
+    Value Value::operator||(const Value& v) const {
+        return std::visit(LogicalOr_visitor(), instance_, v.instance_);
+    }
+
+    struct LogicalNot_visitor {
+        template<typename T>
+        requires std::convertible_to<T, bool>
+        Value operator()(const T v) const {
+            return Value(!v);
+        }
+        template<typename T>
+        Value operator()(T) const {
+            return STR("Undefined Operation: ( !",
+                        Value::typeToString<T>(), " )");
+        }
+    };
+    Value Value::operator!() const {
+        return std::visit(LogicalNot_visitor(), instance_);
+    }
+
 
     
     std::ostream &operator<<(std::ostream &os, Value::Type t) {

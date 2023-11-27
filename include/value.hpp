@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <typeindex>
 #include <sstream>
+#include <cstring>
 
 namespace ast {
 
@@ -18,16 +19,20 @@ namespace ast {
     template<typename T, typename... U>
     struct IndexOfType {
         private:
-        template<int index, typename Ti, typename Tc, typename... V>
-        struct Worker {
-            constexpr static int
-            value = (sizeof...(V) == 0)? -1 :
-                    (std::is_same<Ti, Tc>::value)?
+        template<int index, typename U_>
+        constexpr static int worker() {
+            return -1;
+        }
+        template<int index, typename U_, typename V0, typename... V>
+        constexpr static int worker() {
+            return (std::is_same<U_, V0>::value)?
                         index :
-                        Worker<index+1, Ti, V...>::value;
-        };
+                        worker<index+1, U_, V...>();
+        }
+        
+        
         public:
-        constexpr static int value = Worker<0, T, U...>::value;
+        constexpr static int value = worker<0, T, U...>();
     };
 
 
@@ -38,15 +43,10 @@ namespace ast {
         class Null {
             const char *cause_;
             public:
-            Null(const char *cause) : cause_(cause) {}
+            Null(const char *cause);
+            Null(const std::string &cause);
             const char *cause() {return cause_;}
-            std::string toString() {
-                std::string ret;
-                ret.append("Null Value: \"");
-                ret.append(cause_);
-                ret.append("\"");
-                return ret;
-            }
+            std::string toString();
         };
 
         #define AST_STD_TYPES std::monostate, Null, double, std::string, bool
@@ -61,7 +61,7 @@ namespace ast {
         Type type();
         static std::string typeToString(Type t);
         template<typename T>
-        static std::string typeToString() {
+        static constexpr std::string typeToString() {
             return typeToString(static_cast<Type>(IndexOfType<T, AST_STD_TYPES>::value));
         }
         std::string typeAsString();
@@ -91,8 +91,6 @@ namespace ast {
         Value operator*(const Value& v) const;
         Value operator/(const Value& v) const;
         Value operator%(const Value& v) const = delete; // Integers not supported
-        Value operator++() const;
-        Value operator--() const;
         Value operator-() const;
         // Relational
         Value operator==(const Value& v) const;
@@ -101,6 +99,10 @@ namespace ast {
         Value operator<=(const Value& v) const;
         Value operator>=(const Value& v) const;
         Value operator>(const Value& v) const;
+        // Logical
+        Value operator&&(const Value &v) const;
+        Value operator||(const Value &v) const;
+        Value operator!() const;
         // Bitwise (Not supported as currently integers aren't)
         Value operator^(const Value& v) const=delete;
         Value operator&(const Value& v) const=delete;

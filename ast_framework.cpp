@@ -13,6 +13,10 @@ int main(int argc, char **argv) {
     }
     std::cout << "This is project " << PROJECT_NAME << ".\n";
 
+    std::cout << ast::IndexOfType<ast::Value, std::string, bool, int, float>::value << std::endl;
+
+    // ast::Value valN("");
+    ast::Value val0(0.0);
     ast::Value val1(0.4);
     ast::Value val2(1.4);
     ast::Value vald(0.4);
@@ -21,22 +25,28 @@ int main(int argc, char **argv) {
     ast::Value val4(val1 + val2);
     ast::Value valt(true);
     ast::Value valf(false);
-    std::cout << (val1.toDouble()) << ' '
-            << (val3.toDouble()) << ' '
-            << (valt.toDouble()) << " - "
+    std::cout 
+            << (-val2) << ' '
+            << val2 << ' '
+            << (val2 || vald) << ' '
+            << (val0 || vald) << ' '
+            << (val0 || valf) << ' '
+            << !val2 << ' '
+            // << (val3.type()) << ' '
+    //         // << (valt.type()) << " - "
 
-            << (val1.toString()) << ' '
-            << (val3.toString()) << ' '
-            << (valt.toString()) << " - "
+    //         // << (val1.toString()) << ' '
+    //         // << (val3.toString()) << ' '
+    //         // << (valt.toString()) << " - "
 
-            << (val1.toBool()) << ' '
-            << (val3.toBool()) << ' '
-            << (valt.toBool()) << " - "
+    //         // << (val1.toBool()) << ' '
+    //         // << (val3.toBool()) << ' '
+    //         // << (valt.toBool()) << " - "
 
-            << (valt >= valf) << ' '
-            << (valt >= valt) << ' '
-            << (0) << '\n';
-    return 0;
+    //         // << (valt >= valf) << ' '
+    //         // << (valt >= valt) << ' '
+            << (1) << '\n';
+    // return 0;
 
 
 }
