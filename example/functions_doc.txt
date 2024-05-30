@@ -1,0 +1,13 @@
+
+Types -------------------------------------------------------------------------
+
+Table
+TableEntry - enty to table {similar dictunar }
+&<Table Type> - reference to table entry of specific table
+
+internal functions ------------------------------------------------------------
+
+Table ---------------------------------
+
+table_insert(Table t, TableEntry e)
+    inserts entry into table (entry in format of {...})

@@ -1,0 +1,74 @@
+
+
+TokenSet TYPE:
+    void add(type: Token):
+        TokenSet_insert(TYPE, {type, type:string})
+    void add(type: Token, referenceName: String):
+        TokenSet_insert(TYPE, {type, referenceName})
+    void remove(type)
+        TokenSet_remove(TYPE, type)
+
+    __init__:
+        add($'null')
+
+
+Table Variable:
+    format:
+        name: Token
+        type: &TYPE
+    
+    static void add(var: Token):
+        table_insert(Variables, {var, type:string})
+        !create_variable(type:string)
+    static void add(var: Token, referenceName: String):
+        table_insert(Variables, {var, referenceName})
+        !create_variable(referenceName)
+
+    static void add_initialize(var: Token, expression):
+        !create_variable_init()
+
+    cast Variable->Token(var: Variable):
+        return var:name
+
+    void remove(name: 3)
+        table_remove(Variables, type)
+
+
+KeySet Expression: -Shunting_Yard
+    Tokens:
+        
+
+    pemdas
+    Key A:
+        $M + $A:
+            addition_node($M, $A)
+        $M - $A:
+            subtraction_node($M, $A)
+    Key M:
+        $P * $M:
+            multiplication_node($E, $M)
+        $P / $M:
+            division_node($E, $M)
+    Key P:
+        ($)
+
+
+    
+
+
+Key Statement:
+
+    Var $2 = $Expression:
+        Variable:add($2)
+        
+
+
+    Var $2 = $Expression
+        : create_variable($2)
+
+    
+    
+
+    
+    
+    
