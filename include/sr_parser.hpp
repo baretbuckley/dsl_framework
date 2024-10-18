@@ -53,18 +53,18 @@ class Parser {
         Iterator iterator() const {return Iterator(root_);}
 
         void tmpPrintTreeR(Node *n, int d, TokenMap &map) {
-            if (!n) return;
-            // Print terminals
-            for (auto k : n->terminals) {
-                std::cout << " - " << map.getKeyword(k.id);
-            }
-            std::cout << '\n';
-            for (auto t : n->next) {
-                for (int i = 0; i < d; i++)
-                    std::cout << "  ";
-                std::cout << map.getKeyword(t.first) << " (" << t.first << ")";
-                tmpPrintTreeR(t.second, d+1, map);
-            }
+            // if (!n) return;
+            // // Print terminals
+            // for (auto k : n->terminals) {
+            //     std::cout << " - " << map.getKeyword(k.id);
+            // }
+            // std::cout << '\n';
+            // for (auto t : n->next) {
+            //     for (int i = 0; i < d; i++)
+            //         std::cout << "  ";
+            //     std::cout << map.getKeyword(t.first) << " (" << t.first << ")";
+            //     tmpPrintTreeR(t.second, d+1, map);
+            // }
         }
 
         void tmpPrintTree(TokenMap &map) {
@@ -108,76 +108,76 @@ class Parser {
 
 
     void parse(std::vector<Token> tokens) {
-        for (int i = 0; i < tokens.size(); i++) {
-            std::cout << "insert: current-" << tokens[i].id() << '\n';
-            parserStack_.emplace_back(tree_, tokens[i]);
-            if (i != tokens.size()-1) stepStack(tokens[i+1]);
-            else attemptReduce(TokenID(0));
-            std::cout << "end of insert";
-            for (auto t : parserStack_) std::cout << " - " << t.token.id;
-            std::cout << "\n\n"z;
-        }
-        while (attemptReduce(TokenID(0)));
+        // for (int i = 0; i < tokens.size(); i++) {
+        //     std::cout << "insert: current-" << tokens[i].id() << '\n';
+        //     parserStack_.emplace_back(tree_, tokens[i]);
+        //     if (i != tokens.size()-1) stepStack(tokens[i+1]);
+        //     else attemptReduce(TokenID(0));
+        //     std::cout << "end of insert";
+        //     for (auto t : parserStack_) std::cout << " - " << t.token.id;
+        //     std::cout << "\n\n"z;
+        // }
+        // while (attemptReduce(TokenID(0)));
     }
 
     void stepStack(TokenID next) {
-        std::cout << "Step stack: next-" << next.id << " Successes";
-        // go through parser stack and try to step prediction tree
-        // by the given token, if step fails, attempt reduction
-        bool success = false;
-        for (int i = 0; i < parserStack_.size(); i++) {
-            if (i + parserStack_[i].depth - 1 == parserStack_.size()) {
-                if (parserStack_[i].step(next)) {
-                    success = true;
-                    std::cout << " - id:" << parserStack_[i].token.id << " idx:" << i;
-                }
-            }
-        }
-        std::cout << std::endl;
-        if (!success) attemptReduce(next);
+        // std::cout << "Step stack: next-" << next.id << " Successes";
+        // // go through parser stack and try to step prediction tree
+        // // by the given token, if step fails, attempt reduction
+        // bool success = false;
+        // for (int i = 0; i < parserStack_.size(); i++) {
+        //     if (i + parserStack_[i].depth - 1 == parserStack_.size()) {
+        //         if (parserStack_[i].step(next)) {
+        //             success = true;
+        //             std::cout << " - id:" << parserStack_[i].token.id << " idx:" << i;
+        //         }
+        //     }
+        // }
+        // std::cout << std::endl;
+        // if (!success) attemptReduce(next);
     }
 
     bool attemptReduce(TokenID next) {
-        // Find first token in parserstack handling all following tokens
-        // in the parserstack and reduce it
-        std::cout << "Attempting Reduction\n";
-        for (int i = 0; i < parserStack_.size(); i++) {
-            //tmp
-            // std::cout << i + parserStack_[i].depth << ' ' << parserStack_.size() << ' ' << parserStack_[i].pred.terminal() << ' ' << parserStack_[i].pred.terminals().size() << std::endl;
-            if (i + parserStack_[i].depth == parserStack_.size()) {
-                if (parserStack_[i].pred.terminal()) return reduce(i, next);
-            }
-        }
-        return false;
-        std::cout << "No valid reduction found\n";
+        // // Find first token in parserstack handling all following tokens
+        // // in the parserstack and reduce it
+        // std::cout << "Attempting Reduction\n";
+        // for (int i = 0; i < parserStack_.size(); i++) {
+        //     //tmp
+        //     // std::cout << i + parserStack_[i].depth << ' ' << parserStack_.size() << ' ' << parserStack_[i].pred.terminal() << ' ' << parserStack_[i].pred.terminals().size() << std::endl;
+        //     if (i + parserStack_[i].depth == parserStack_.size()) {
+        //         if (parserStack_[i].pred.terminal()) return reduce(i, next);
+        //     }
+        // }
+        // return false;
+        // std::cout << "No valid reduction found\n";
     }
 
     bool reduce(int idx, TokenID next) {
-        std::cout << "reducing: id:" << parserStack_[idx].token.id << " idx:" << idx;
-        // Reduce index in parser stack by replaceing it with terminal
-        // token, and remove all following indexes. Any token
-        // proceding reduction, if it predicts at or past reduction, revive it
-        TokenID newToken = parserStack_[idx].pred.terminals().front();
-        std::cout << " - new ID: " << newToken.id << " - Stack size: " << parserStack_.size() << '\n'; 
-        parserStack_.erase(parserStack_.begin()+idx, parserStack_.end());
-        parserStack_.emplace_back(tree_, newToken);
+        // std::cout << "reducing: id:" << parserStack_[idx].token.id << " idx:" << idx;
+        // // Reduce index in parser stack by replaceing it with terminal
+        // // token, and remove all following indexes. Any token
+        // // proceding reduction, if it predicts at or past reduction, revive it
+        // TokenID newToken = parserStack_[idx].pred.terminals().front();
+        // std::cout << " - new ID: " << newToken.id << " - Stack size: " << parserStack_.size() << '\n'; 
+        // parserStack_.erase(parserStack_.begin()+idx, parserStack_.end());
+        // parserStack_.emplace_back(tree_, newToken);
 
-        for (int i = 0; i < idx; i++) {
-            if (parserStack_[i].depth+i > idx) revive(i);
-        }
-        if (next.id) stepStack(next);
-        return true;
+        // for (int i = 0; i < idx; i++) {
+        //     if (parserStack_[i].depth+i > idx) revive(i);
+        // }
+        // if (next.id) stepStack(next);
+        // return true;
     }
 
     inline void revive(int idx) {
-        std::cout << "reviving: idx:" << idx << " id:" << parserStack_[idx].token.id
-                << " - depth: " << parserStack_[idx].depth << std::endl;
-        // revive token by backstepping prediction to n-2 of parserStack size,
-        // then restep to last.
-        // back step to before the last idx due to change in token from reduction
-        while(parserStack_[idx].depth+idx > parserStack_.size()-1)
-            parserStack_[idx].backStep();
-        parserStack_[idx].step(parserStack_.back().token);
+        // std::cout << "reviving: idx:" << idx << " id:" << parserStack_[idx].token.id
+        //         << " - depth: " << parserStack_[idx].depth << std::endl;
+        // // revive token by backstepping prediction to n-2 of parserStack size,
+        // // then restep to last.
+        // // back step to before the last idx due to change in token from reduction
+        // while(parserStack_[idx].depth+idx > parserStack_.size()-1)
+        //     parserStack_[idx].backStep();
+        // parserStack_[idx].step(parserStack_.back().token);
     }
 
     // void parse(std::vector<Token> tokens) {
