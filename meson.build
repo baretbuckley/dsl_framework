@@ -7,7 +7,7 @@ project('ast_framework', 'cpp',
 incdir = include_directories('include')
 
 src_files = ['ast_framework.cpp', 'src/value.cpp', 'src/tokenizer.cpp',
-  'src/sr_parser.cpp', 'src/token.cpp']
+  'src/sr_parser.cpp', 'src/token.cpp', 'src/tokenizerReader.cpp']
 
 exe = executable('ast_framework', src_files,
            install : true, include_directories : incdir)

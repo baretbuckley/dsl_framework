@@ -1,0 +1,36 @@
+Token-List: {':', '{', '}', '(', ')'}
+    other > Terminate
+
+let Whitespace : Char-Group =
+    {' ', '\t', '\n'}
+
+Token Whitespace
+    Enter $Whitespace
+    $Whitespace > Whitespace
+    other > Reject
+
+Token-List Keyword:
+    {'for', 'else'}
+    other > Identifier
+
+Token Identifier:
+    Enter $Letter
+    $Letter > Identifier
+    other > Terminate
+
+Token Number
+    Enter $Digit | -
+    $Digit > Number
+    . > NumberTail
+    other > Terminate
+
+Token NumberTail
+    Enter .
+    $Digit > NumberTail
+    other > Terminate Number
+
+
+char-Group
+[] - List
+| - union
+$... - 

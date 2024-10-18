@@ -1,0 +1,39 @@
+
+
+Token Zeros:
+    Enter 0
+    0 > Zeros
+    other > Terminate
+
+Token OneZero:
+    Enter 1
+    0 > OneZero-off
+    other > Terminate
+
+Token OneZero-off
+    1 > OneZero
+    other > Terminate OneZero
+
+Token Number
+    Enter 2
+    0 > Number
+    1 > Number
+    3 > Number
+    4 > Number
+    5 > Number
+    6 > Number
+    7 > Number
+    8 > Number
+    9 > Number
+    other > Terminate
+
+Token WhiteSpace
+    Enter -
+    - > WhiteSpace
+    Other > Reject
+
+Start:
+    Zeros
+    OneZero
+    Number
+    WhiteSpace

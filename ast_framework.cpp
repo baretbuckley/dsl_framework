@@ -3,6 +3,7 @@
 #include <typeindex>
 #include <instruction_base.hpp>
 #include <tokenizer.hpp>
+#include <tokenizerReader.hpp>
 #include <sr_parser.hpp>
 #include <token.hpp>
 
@@ -14,12 +15,12 @@
 
 #define PROJECT_NAME "ast_framework"
 
-void loadRule(ast::srp::Parser &parser, std::vector<uint32_t> rule, uint32_t result) {
-    std::vector<ast::TokenID> tokenRule;
-    for (auto id : rule) 
-        tokenRule.push_back(ast::TokenID(id));
-    parser.loadRule(tokenRule, ast::TokenID(result));
-}
+// void loadRule(ast::srp::Parser &parser, std::vector<uint32_t> rule, uint32_t result) {
+//     std::vector<ast::TokenID> tokenRule;
+//     for (auto id : rule) 
+//         tokenRule.push_back(ast::TokenID(id));
+//     parser.loadRule(tokenRule, ast::TokenID(result));
+// }
 
 // void printTree(ast::srp::VariableTree::Iterator it) {
     
@@ -100,80 +101,105 @@ int main(int argc, char **argv) {
 
     
 
-    std::stringstream input("5 + 2");
-    auto idMap = std::make_shared<ast::TokenMap>();
-    ast::Tokenizer tokenizer(idMap);
-    tokenizer.loadWhiteSpace(' ');
-    tokenizer.loadWhiteSpace('\n');
-    tokenizer.loadKeyword("0");
-    tokenizer.loadKeyword("1");
-    tokenizer.loadKeyword("2");
-    tokenizer.loadKeyword("3");
-    tokenizer.loadKeyword("4");
-    tokenizer.loadKeyword("5");
-    tokenizer.loadKeyword("6");
-    tokenizer.loadKeyword("7");
-    tokenizer.loadKeyword("8");
-    tokenizer.loadKeyword("9");
-    tokenizer.loadSymbol("+");
-    tokenizer.loadSymbol("*");
+    // std::stringstream input("5 + 2");
+    // auto idMap = std::make_shared<ast::TokenMap>();
+    // ast::Tokenizer tokenizer(idMap);
+    // tokenizer.loadWhiteSpace(' ');
+    // tokenizer.loadWhiteSpace('\n');
+    // tokenizer.loadKeyword("0");
+    // tokenizer.loadKeyword("1");
+    // tokenizer.loadKeyword("2");
+    // tokenizer.loadKeyword("3");
+    // tokenizer.loadKeyword("4");
+    // tokenizer.loadKeyword("5");
+    // tokenizer.loadKeyword("6");
+    // tokenizer.loadKeyword("7");
+    // tokenizer.loadKeyword("8");
+    // tokenizer.loadKeyword("9");
+    // tokenizer.loadSymbol("+");
+    // tokenizer.loadSymbol("*");
 
-    std::vector<ast::Token> tokens;
-    tokenizer.tokenize(tokens, input);
+    // std::vector<ast::Token> tokens;
+    // tokenizer.tokenize(tokens, input);
 
-    for (auto t : tokens) {
-        if (t.type() == ast::Token::Keyword)
-            std::cout << t.id() << ' ';
-        else std::cout << '"' << t.string() << "\" ";
-    }
-    std::cout << std::endl;
+    // for (auto t : tokens) {
+    //     if (t.type() == ast::Token::Keyword)
+    //         std::cout << t.id() << ' ';
+    //     else std::cout << '"' << t.string() << "\" ";
+    // }
+    // std::cout << std::endl;
 
-    for (auto t : tokens) {
-        if (t.type() == ast::Token::Keyword)
-            std::cout << idMap->getKeyword(t.id()) << ' ';
-        else std::cout << '"' << t.string() << "\" ";
-    }
-    std::cout << std::endl;
+    // for (auto t : tokens) {
+    //     if (t.type() == ast::Token::Keyword)
+    //         std::cout << idMap->getKeyword(t.id()) << ' ';
+    //     else std::cout << '"' << t.string() << "\" ";
+    // }
+    // std::cout << std::endl;
+
+    // // ast::srp::Parser parser;
+
+
+
+
+
+    // // E -> T + E | T 
+    // // T -> V * T | V
+    // // V -> #
 
     // ast::srp::Parser parser;
+    // idMap->loadKey("E");
+    // idMap->loadKey("T");
+    // idMap->loadKey("V");
+    // std::cout << idMap->keyID("T") << ' ' << idMap->tokenID("+") << ' ' << idMap->keyID("E") << ' ' << idMap->keyID("E") << std::endl;
+    // loadRule(parser, {idMap->tokenID("0")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("1")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("2")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("3")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("4")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("5")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("6")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("7")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("8")}, idMap->keyID("V"));
+    // loadRule(parser, {idMap->tokenID("9")}, idMap->keyID("V"));
 
+    // loadRule(parser, {idMap->keyID("V")}, idMap->keyID("T"));
+    // loadRule(parser, {idMap->keyID("V"), idMap->tokenID("*"), idMap->keyID("T")}, idMap->keyID("T"));
 
+    // loadRule(parser, {idMap->keyID("T")}, idMap->keyID("E"));
+    // loadRule(parser, {idMap->keyID("E"), idMap->tokenID("+"), idMap->keyID("T")}, idMap->keyID("E"));
 
-
-
-    // E -> T + E | T 
-    // T -> V * T | V
-    // V -> #
-
-    ast::srp::Parser parser;
-    idMap->loadKey("E");
-    idMap->loadKey("T");
-    idMap->loadKey("V");
-    std::cout << idMap->keyID("T") << ' ' << idMap->tokenID("+") << ' ' << idMap->keyID("E") << ' ' << idMap->keyID("E") << std::endl;
-    loadRule(parser, {idMap->tokenID("0")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("1")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("2")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("3")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("4")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("5")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("6")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("7")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("8")}, idMap->keyID("V"));
-    loadRule(parser, {idMap->tokenID("9")}, idMap->keyID("V"));
-
-    loadRule(parser, {idMap->keyID("V")}, idMap->keyID("T"));
-    loadRule(parser, {idMap->keyID("V"), idMap->tokenID("*"), idMap->keyID("T")}, idMap->keyID("T"));
-
-    loadRule(parser, {idMap->keyID("T")}, idMap->keyID("E"));
-    loadRule(parser, {idMap->keyID("E"), idMap->tokenID("+"), idMap->keyID("T")}, idMap->keyID("E"));
-
-    parser.tmpPrintTree(*idMap);
-    std::cout << "parsing\n";
-    parser.parse(tokens);
-    std::cout << "Finished parse\n";
+    // parser.tmpPrintTree(*idMap);
+    // std::cout << "parsing\n";
+    // parser.parse(tokens);
+    // std::cout << "Finished parse\n";
 
     
-    
+    auto reader = ast::TokenizerReader();
+    reader.read("../example/tokenizer.dsl.tkn");
+    auto tokenizer = reader.createTokenizer();
+    std::cout << "Created tokenizer" << std::endl;
+    std::ifstream f("../example/text", std::ios_base::in);
+    std::istringstream ss("210-102-01");
+    std::cout << "created stream" << std::endl;
+    tokenizer->loadStream(&f);
+    std::cout << "Stream opened" << std::endl;
+    ast::Token t;
+    std::cout << "Starting parsing" << std::endl;
+    while (!tokenizer->eof()) {
+        t = tokenizer->next();
+        std::cout << "from " << t.begining << " to " << t.end << " as " <<
+                ((t.id)? tokenizer->tokenName(t.id) : "Reject") << ".\n";
+    }
+
+    // // 
+    // std::istringstream ss("This is it as a \nstring stream\nhopefully its working.");
+    // ast::InputBuffer<5> b;
+    // b.openStream(&ss);
+    // while (!b.eof()) {
+    //     std::cout << b.get();
+    //     b.next();
+    // }
+
 
 
 }
